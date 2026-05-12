@@ -28,12 +28,15 @@ use App\Models\User;
 use App\Models\UserNotification;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Hash;
 
 class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
         // ── Roles & Permissions ──────────────────────────────
+        $buyerRole = Role::create(['id' => Str::uuid(), 'name' => 'buyer', 'guard_name' => 'web']);
+        $sellerRole = Role::create(['id' => Str::uuid(), 'name' => 'seller', 'guard_name' => 'web']);
         $adminRole = Role::create(['id' => Str::uuid(), 'name' => 'admin', 'guard_name' => 'web']);
         $staffRole = Role::create(['id' => Str::uuid(), 'name' => 'staff', 'guard_name' => 'web']);
         $viewerRole = Role::create(['id' => Str::uuid(), 'name' => 'viewer', 'guard_name' => 'web']);

@@ -1,118 +1,178 @@
-<x-app-layout>
-    <x-slot name="header">
-        <div class="flex items-center justify-between">
-            <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">Order {{ $order->order_number }}</h2>
-            <a href="{{ route('dashboard.orders') }}" class="text-sm text-indigo-600 hover:text-indigo-800">← Back to Orders</a>
-        </div>
-    </x-slot>
+@extends('layouts.dashboard')
 
-    <div class="py-12">
-        <div class="max-w-5xl mx-auto sm:px-6 lg:px-8 space-y-6">
-            @if(session('success'))
-                <div class="p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg text-sm text-green-700 dark:text-green-400">{{ session('success') }}</div>
-            @endif
+@section('title', 'Order Details ' . $order->order_number)
 
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <!-- Order Info -->
-                <div class="bg-white dark:bg-gray-800 shadow-sm sm:rounded-lg p-6">
-                    <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase mb-3">Order Info</h3>
-                    <dl class="space-y-2 text-sm">
-                        <div class="flex justify-between"><dt class="text-gray-500 dark:text-gray-400">Status</dt>
-                            <dd>
-                                @php $colors = ['pending'=>'bg-yellow-100 text-yellow-800','processing'=>'bg-blue-100 text-blue-800','shipped'=>'bg-indigo-100 text-indigo-800','delivered'=>'bg-green-100 text-green-800','cancelled'=>'bg-red-100 text-red-800']; @endphp
-                                <span class="inline-flex px-2 py-0.5 rounded-full text-xs font-medium {{ $colors[$order->status] ?? '' }}">{{ ucfirst($order->status) }}</span>
-                            </dd>
-                        </div>
-                        <div class="flex justify-between"><dt class="text-gray-500 dark:text-gray-400">Date</dt><dd class="text-gray-900 dark:text-white">{{ $order->placed_at?->format('M d, Y') }}</dd></div>
-                        <div class="flex justify-between"><dt class="text-gray-500 dark:text-gray-400">Total</dt><dd class="font-bold text-gray-900 dark:text-white">${{ number_format($order->grand_total, 2) }}</dd></div>
-                    </dl>
-                    <!-- Status Update -->
-                    <form method="POST" action="{{ route('admin.orders.updateStatus', $order) }}" class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-                        @csrf @method('PATCH')
-                        <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Update Status</label>
-                        <div class="flex gap-2">
-                            <select name="status" class="flex-1 rounded-lg text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
-                                @foreach(['pending','processing','shipped','delivered','cancelled'] as $s)
-                                    <option value="{{ $s }}" @selected($order->status === $s)>{{ ucfirst($s) }}</option>
-                                @endforeach
-                            </select>
-                            <button type="submit" class="px-3 py-1.5 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700 transition">Save</button>
-                        </div>
-                    </form>
-                </div>
+@section('content')
+<!-- Page Title & Actions -->
+<div class="flex items-center justify-between">
+    <div>
+        <a href="{{ route('dashboard.orders') }}" class="text-sm font-medium text-info hover:text-blue-700 flex items-center mb-2 transition-colors">
+            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+            Back to Orders
+        </a>
+        <h1 class="text-2xl font-semibold text-slate-900">Order {{ $order->order_number }}</h1>
+        <p class="text-sm text-textMuted mt-1">Placed on {{ $order->placed_at?->format('F j, Y \a\t h:i A') }}</p>
+    </div>
+    <div class="flex items-center space-x-3">
+        @php
+            $statusClasses = [
+                'pending' => 'bg-warningBg text-yellow-700 border-warning/20',
+                'processing' => 'bg-infoBg text-info border-info/20',
+                'shipped' => 'bg-infoBg text-info border-info/20',
+                'delivered' => 'bg-successBg text-success border-success/20',
+                'cancelled' => 'bg-dangerBg text-danger border-danger/20',
+            ];
+            $class = $statusClasses[$order->status] ?? 'bg-slate-100 text-slate-600 border-slate-200';
+        @endphp
+        <span class="inline-flex items-center px-4 py-2 rounded-xl text-sm font-bold {{ $class }} border">
+            {{ ucfirst($order->status) }}
+        </span>
+    </div>
+</div>
 
-                <!-- Customer -->
-                <div class="bg-white dark:bg-gray-800 shadow-sm sm:rounded-lg p-6">
-                    <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase mb-3">Customer</h3>
-                    <dl class="space-y-2 text-sm">
-                        <div><dt class="text-gray-500 dark:text-gray-400">Name</dt><dd class="text-gray-900 dark:text-white">{{ $order->customer?->name ?? '—' }}</dd></div>
-                        <div><dt class="text-gray-500 dark:text-gray-400">Email</dt><dd class="text-gray-900 dark:text-white">{{ $order->customer?->email ?? '—' }}</dd></div>
-                        <div><dt class="text-gray-500 dark:text-gray-400">Phone</dt><dd class="text-gray-900 dark:text-white">{{ $order->customer?->phone ?? '—' }}</dd></div>
-                    </dl>
-                </div>
-
-                <!-- Payment -->
-                <div class="bg-white dark:bg-gray-800 shadow-sm sm:rounded-lg p-6">
-                    <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase mb-3">Payment</h3>
-                    @if($order->payments->count())
-                        @php $payment = $order->payments->first(); @endphp
-                        <dl class="space-y-2 text-sm">
-                            <div class="flex justify-between"><dt class="text-gray-500 dark:text-gray-400">Gateway</dt><dd class="text-gray-900 dark:text-white">{{ ucfirst($payment->gateway) }}</dd></div>
-                            <div class="flex justify-between"><dt class="text-gray-500 dark:text-gray-400">Status</dt>
-                                <dd><span class="inline-flex px-2 py-0.5 rounded-full text-xs font-medium {{ $payment->status === 'paid' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800' }}">{{ ucfirst($payment->status) }}</span></dd>
-                            </div>
-                            <div class="flex justify-between"><dt class="text-gray-500 dark:text-gray-400">Transaction</dt><dd class="text-gray-900 dark:text-white font-mono text-xs">{{ $payment->transaction_id }}</dd></div>
-                        </dl>
-                    @else
-                        <p class="text-sm text-gray-400">No payment recorded.</p>
-                    @endif
-                </div>
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+    <!-- Main Content -->
+    <div class="lg:col-span-2 space-y-8">
+        <!-- Items Table -->
+        <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+            <div class="px-6 py-5 border-b border-slate-100">
+                <h3 class="text-lg font-semibold text-slate-900">Order Items</h3>
             </div>
-
-            <!-- Items -->
-            <div class="bg-white dark:bg-gray-800 shadow-sm sm:rounded-lg p-6">
-                <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase mb-4">Order Items</h3>
-                <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
                     <thead>
-                        <tr>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Product</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">SKU</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Qty</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Unit Price</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Total</th>
+                        <tr class="bg-slate-50/50 border-b border-slate-100">
+                            <th class="px-6 py-4 text-xs font-semibold text-slate-800 uppercase">Product</th>
+                            <th class="px-6 py-4 text-xs font-semibold text-slate-800 uppercase text-center">Qty</th>
+                            <th class="px-6 py-4 text-xs font-semibold text-slate-800 uppercase text-right">Unit Price</th>
+                            <th class="px-6 py-4 text-xs font-semibold text-slate-800 uppercase text-right">Total</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                    <tbody class="divide-y divide-slate-100 text-sm">
                         @foreach($order->items as $item)
-                            <tr>
-                                <td class="px-4 py-3 text-sm text-gray-900 dark:text-white">{{ $item->product_name }}</td>
-                                <td class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400 font-mono">{{ $item->sku }}</td>
-                                <td class="px-4 py-3 text-sm text-gray-900 dark:text-white">{{ $item->quantity }}</td>
-                                <td class="px-4 py-3 text-sm text-gray-900 dark:text-white">${{ number_format($item->unit_price, 2) }}</td>
-                                <td class="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white">${{ number_format($item->total_price, 2) }}</td>
+                            <tr class="hover:bg-slate-50/50 transition-colors">
+                                <td class="px-6 py-4">
+                                    <div class="font-bold text-slate-900">{{ $item->product_name }}</div>
+                                    <div class="text-xs text-textMuted font-mono">{{ $item->sku }}</div>
+                                </td>
+                                <td class="px-6 py-4 text-center font-medium text-slate-700">{{ $item->quantity }}</td>
+                                <td class="px-6 py-4 text-right text-slate-600">${{ number_format($item->unit_price, 2) }}</td>
+                                <td class="px-6 py-4 text-right font-bold text-slate-900">${{ number_format($item->total_price, 2) }}</td>
                             </tr>
                         @endforeach
                     </tbody>
                 </table>
-                <dl class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 space-y-1 text-sm text-right">
-                    <div class="flex justify-end gap-8"><dt class="text-gray-500">Subtotal</dt><dd class="w-24 text-gray-900 dark:text-white">${{ number_format($order->subtotal, 2) }}</dd></div>
-                    <div class="flex justify-end gap-8"><dt class="text-gray-500">Tax</dt><dd class="w-24 text-gray-900 dark:text-white">${{ number_format($order->tax_total, 2) }}</dd></div>
-                    <div class="flex justify-end gap-8 font-bold"><dt class="text-gray-900 dark:text-white">Grand Total</dt><dd class="w-24 text-gray-900 dark:text-white">${{ number_format($order->grand_total, 2) }}</dd></div>
-                </dl>
             </div>
+            <div class="p-6 bg-slate-50/50 border-t border-slate-100">
+                <div class="flex flex-col items-end space-y-2">
+                    <div class="flex justify-between w-full max-w-[240px] text-sm">
+                        <span class="text-textMuted">Subtotal</span>
+                        <span class="font-medium text-slate-900">${{ number_format($order->subtotal, 2) }}</span>
+                    </div>
+                    <div class="flex justify-between w-full max-w-[240px] text-sm">
+                        <span class="text-textMuted">Tax</span>
+                        <span class="font-medium text-slate-900">${{ number_format($order->tax_total, 2) }}</span>
+                    </div>
+                    <div class="flex justify-between w-full max-w-[240px] pt-2 border-t border-slate-200">
+                        <span class="font-bold text-slate-900">Grand Total</span>
+                        <span class="font-bold text-indigo-600 text-lg">${{ number_format($order->grand_total, 2) }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
 
-            <!-- Shipments -->
-            @if($order->shipments->count())
-                <div class="bg-white dark:bg-gray-800 shadow-sm sm:rounded-lg p-6">
-                    <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase mb-4">Shipments</h3>
+        <!-- Shipments -->
+        @if($order->shipments->count())
+            <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+                <div class="px-6 py-5 border-b border-slate-100">
+                    <h3 class="text-lg font-semibold text-slate-900">Shipments</h3>
+                </div>
+                <div class="p-6 space-y-4">
                     @foreach($order->shipments as $shipment)
-                        <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg text-sm">
-                            <div><span class="font-medium text-gray-900 dark:text-white">{{ $shipment->courier }}</span> — <span class="font-mono text-gray-500">{{ $shipment->tracking_number }}</span></div>
-                            <span class="inline-flex px-2 py-0.5 rounded-full text-xs font-medium {{ $shipment->shipment_status === 'delivered' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800' }}">{{ ucfirst(str_replace('_', ' ', $shipment->shipment_status)) }}</span>
+                        <div class="flex items-center justify-between p-4 bg-slate-50 rounded-xl border border-slate-100">
+                            <div class="flex items-center">
+                                <div class="p-2 bg-white rounded-lg border border-slate-200 mr-3 text-slate-500">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+                                </div>
+                                <div>
+                                    <p class="font-bold text-slate-900 text-sm">{{ $shipment->courier }}</p>
+                                    <p class="text-xs text-textMuted font-mono">{{ $shipment->tracking_number }}</p>
+                                </div>
+                            </div>
+                            <span class="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider {{ $shipment->shipment_status === 'delivered' ? 'bg-successBg text-success' : 'bg-infoBg text-info' }} border border-current opacity-70">
+                                {{ str_replace('_', ' ', $shipment->shipment_status) }}
+                            </span>
                         </div>
                     @endforeach
                 </div>
-            @endif
+            </div>
+        @endif
+    </div>
+
+    <!-- Sidebar -->
+    <div class="space-y-8">
+        <!-- Order Status Update -->
+        <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
+            <h3 class="text-sm font-bold text-slate-400 uppercase tracking-widest mb-4">Update Order Status</h3>
+            <form method="POST" action="{{ route('admin.orders.updateStatus', $order) }}" class="space-y-4">
+                @csrf @method('PATCH')
+                <select name="status" class="w-full rounded-xl text-sm border-slate-200 bg-slate-50 focus:ring-info focus:border-info transition-colors">
+                    @foreach(['pending','processing','shipped','delivered','cancelled'] as $s)
+                        <option value="{{ $s }}" @selected($order->status === $s)>{{ ucfirst($s) }}</option>
+                    @endforeach
+                </select>
+                <button type="submit" class="w-full py-2.5 bg-sidebarDark text-white rounded-xl font-medium hover:bg-slate-800 transition-colors shadow-sm">
+                    Save Changes
+                </button>
+            </form>
+        </div>
+
+        <!-- Customer & Payment -->
+        <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm space-y-8">
+            <div>
+                <h3 class="text-sm font-bold text-slate-400 uppercase tracking-widest mb-4">Customer Details</h3>
+                <div class="space-y-3">
+                    <div class="flex items-center">
+                        <div class="h-8 w-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 mr-3">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+                        </div>
+                        <div>
+                            <p class="text-sm font-bold text-slate-900">{{ $order->customer?->name ?? '—' }}</p>
+                            <p class="text-xs text-textMuted">{{ $order->customer?->email ?? '—' }}</p>
+                        </div>
+                    </div>
+                    @if($order->customer?->phone)
+                        <p class="text-xs text-textMuted flex items-center">
+                            <svg class="w-3.5 h-3.5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+                            {{ $order->customer->phone }}
+                        </p>
+                    @endif
+                </div>
+            </div>
+
+            <div>
+                <h3 class="text-sm font-bold text-slate-400 uppercase tracking-widest mb-4">Payment Information</h3>
+                @if($order->payments->count())
+                    @php $payment = $order->payments->first(); @endphp
+                    <div class="space-y-2">
+                        <div class="flex justify-between text-xs">
+                            <span class="text-textMuted">Method</span>
+                            <span class="font-bold text-slate-900 uppercase">{{ $payment->gateway }}</span>
+                        </div>
+                        <div class="flex justify-between text-xs">
+                            <span class="text-textMuted">Status</span>
+                            <span class="font-bold {{ $payment->status === 'paid' ? 'text-success' : 'text-warning' }} uppercase">{{ $payment->status }}</span>
+                        </div>
+                        <div class="pt-2">
+                            <p class="text-[10px] text-textMuted uppercase font-bold tracking-tighter">Transaction ID</p>
+                            <p class="text-xs font-mono text-slate-700 truncate">{{ $payment->transaction_id }}</p>
+                        </div>
+                    </div>
+                @else
+                    <p class="text-xs text-slate-400 italic">No payment recorded.</p>
+                @endif
+            </div>
         </div>
     </div>
-</x-app-layout>
+</div>
+@endsection

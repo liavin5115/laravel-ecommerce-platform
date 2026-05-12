@@ -6,8 +6,10 @@ use App\Http\Controllers\ProductController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\StoreOnboardingController;
+use App\Http\Controllers\Buyer\BuyerDashboardController;
 use App\Http\Controllers\SuperAdmin\DashboardController as SuperAdminDashboardController;
 use App\Http\Controllers\SuperAdmin\OrganizationController as SuperAdminOrganizationController;
+use App\Http\Controllers\SuperAdmin\SellerRequestController;
 use App\Http\Controllers\Admin\ProductController as AdminProductController;
 use App\Http\Controllers\Admin\CouponController;
 use App\Models\Product;
@@ -39,6 +41,11 @@ Route::middleware(['auth', 'super_admin'])->prefix('super-admin')->name('super-a
     Route::get('/organizations', [SuperAdminOrganizationController::class, 'index'])->name('organizations.index');
     Route::patch('/organizations/{organization}/toggle', [SuperAdminOrganizationController::class, 'toggleStatus'])->name('organizations.toggle-status');
     Route::patch('/organizations/{organization}/plan', [SuperAdminOrganizationController::class, 'updatePlan'])->name('organizations.update-plan');
+
+    // Seller Requests
+    Route::get('/seller-requests', [SellerRequestController::class, 'index'])->name('seller-requests.index');
+    Route::patch('/seller-requests/{sellerRequest}/approve', [SellerRequestController::class, 'approve'])->name('seller-requests.approve');
+    Route::patch('/seller-requests/{sellerRequest}/reject', [SellerRequestController::class, 'reject'])->name('seller-requests.reject');
 });
 
 // ── Cart ────────────────────────────────────────────────
@@ -52,22 +59,36 @@ Route::get('/checkout', [CheckoutController::class, 'show'])->name('checkout.sho
 Route::post('/checkout', [CheckoutController::class, 'process'])->name('checkout.process');
 Route::get('/checkout/success/{order}', [CheckoutController::class, 'success'])->name('checkout.success');
 
-// ── Dashboard ───────────────────────────────────────────
+// ── Buyer Dashboard ───────────────────────────────────────
+Route::middleware(['auth', 'verified'])->prefix('my-account')->name('buyer.')->group(function () {
+    Route::get('/', [BuyerDashboardController::class, 'index'])->name('dashboard');
+    Route::get('/orders', [BuyerDashboardController::class, 'orders'])->name('orders');
+    Route::get('/orders/{order}', [BuyerDashboardController::class, 'showOrder'])->name('orders.show');
+});
+
+// ── Unified Dashboard Router ───────────────────────────
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
-    Route::get('/dashboard/products', [DashboardController::class, 'products'])->name('dashboard.products');
-    Route::get('/dashboard/orders', [DashboardController::class, 'orders'])->name('dashboard.orders');
-    Route::get('/dashboard/customers', [DashboardController::class, 'customers'])->name('dashboard.customers');
-    Route::get('/dashboard/coupons', [CouponController::class, 'index'])->name('dashboard.coupons');
-    Route::get('/dashboard/stores', [App\Http\Controllers\Admin\StoreController::class, 'index'])->name('dashboard.stores');
-    Route::get('/dashboard/categories', [App\Http\Controllers\Admin\CategoryController::class, 'index'])->name('dashboard.categories');
-    Route::get('/dashboard/tickets', [DashboardController::class, 'tickets'])->name('dashboard.tickets');
-    Route::get('/dashboard/tickets/{ticket}', [DashboardController::class, 'ticketShow'])->name('dashboard.tickets.show');
-    Route::post('/dashboard/tickets/{ticket}/reply', [DashboardController::class, 'ticketReply'])->name('dashboard.tickets.reply');
+    // Unified dashboard router - redirects to appropriate dashboard based on user permissions
+    Route::get('/dashboard', [DashboardController::class, 'show'])->name('dashboard.show');
+    Route::get('/dashboard/switch/{dashboard?}', [DashboardController::class, 'switch'])->name('dashboard.switch');
+
+    // Seller dashboard (requires organization)
+    Route::middleware('seller')->group(function () {
+        Route::get('/dashboard/seller', [DashboardController::class, 'index'])->name('dashboard');
+        Route::get('/dashboard/products', [DashboardController::class, 'products'])->name('dashboard.products');
+        Route::get('/dashboard/orders', [DashboardController::class, 'orders'])->name('dashboard.orders');
+        Route::get('/dashboard/customers', [DashboardController::class, 'customers'])->name('dashboard.customers');
+        Route::get('/dashboard/coupons', [CouponController::class, 'index'])->name('dashboard.coupons');
+        Route::get('/dashboard/stores', [App\Http\Controllers\Admin\StoreController::class, 'index'])->name('dashboard.stores');
+        Route::get('/dashboard/categories', [App\Http\Controllers\Admin\CategoryController::class, 'index'])->name('dashboard.categories');
+        Route::get('/dashboard/tickets', [DashboardController::class, 'tickets'])->name('dashboard.tickets');
+        Route::get('/dashboard/tickets/{ticket}', [DashboardController::class, 'ticketShow'])->name('dashboard.tickets.show');
+        Route::post('/dashboard/tickets/{ticket}/reply', [DashboardController::class, 'ticketReply'])->name('dashboard.tickets.reply');
+    });
 });
 
 // ── Admin CRUD ──────────────────────────────────────────
-Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(function () {
+Route::middleware(['auth', 'verified', 'seller'])->prefix('admin')->name('admin.')->group(function () {
     // Products CRUD
     Route::get('/products/create', [AdminProductController::class, 'create'])->name('products.create');
     Route::post('/products', [AdminProductController::class, 'store'])->name('products.store');

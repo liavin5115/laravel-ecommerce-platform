@@ -1,53 +1,79 @@
-<x-app-layout>
-    <x-slot name="header">
-        <div class="flex items-center justify-between">
-            <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">{{ __('Categories') }}</h2>
-            <a href="{{ route('admin.categories.create') }}" class="inline-flex items-center px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition">+ New Category</a>
-        </div>
-    </x-slot>
-    <div class="py-12">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-            @if(session('success'))
-                <div class="mb-6 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg text-sm text-green-700 dark:text-green-400">{{ session('success') }}</div>
-            @endif
-            <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg p-6">
-                <div class="overflow-x-auto">
-                    <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                        <thead><tr>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Name</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Parent</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Slug</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</th>
-                        </tr></thead>
-                        <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-                            @forelse($categories as $category)
-                                <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-                                    <td class="px-6 py-4 text-sm font-medium text-gray-900 dark:text-white">{{ $category->name }}</td>
-                                    <td class="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">{{ $category->parent?->name ?? 'None' }}</td>
-                                    <td class="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">{{ $category->slug }}</td>
-                                    <td class="px-6 py-4">
-                                        @if($category->is_active)
-                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">Active</span>
-                                        @else
-                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300">Inactive</span>
-                                        @endif
-                                    </td>
-                                    <td class="px-6 py-4 text-sm space-x-2">
-                                        <a href="{{ route('admin.categories.edit', $category) }}" class="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300">Edit</a>
-                                        <form method="POST" action="{{ route('admin.categories.destroy', $category) }}" class="inline" onsubmit="return confirm('Delete category?');">@csrf @method('DELETE')<button class="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300">Delete</button></form>
-                                    </td>
-                                </tr>
-                            @empty
-                                <tr><td colspan="5" class="px-6 py-12 text-center text-sm text-gray-500 dark:text-gray-400">No categories found.</td></tr>
-                            @endforelse
-                        </tbody>
-                    </table>
-                </div>
-                @if($categories instanceof \Illuminate\Pagination\AbstractPaginator && $categories->hasPages())
-                    <div class="mt-6">{{ $categories->links() }}</div>
-                @endif
-            </div>
-        </div>
+@extends('layouts.dashboard')
+
+@section('title', 'Categories')
+
+@section('content')
+<!-- Page Title -->
+<div class="flex items-center justify-between">
+    <div>
+        <h1 class="text-2xl font-semibold text-slate-900">Categories</h1>
+        <p class="text-sm text-textMuted mt-1">Organize your products into logical sections</p>
     </div>
-</x-app-layout>
+    <a href="{{ route('admin.categories.create') }}" class="inline-flex items-center px-5 py-2.5 bg-sidebarDark text-white rounded-xl font-medium hover:bg-slate-800 transition-colors shadow-sm">
+        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 4v16m8-8H4" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+        Add New Category
+    </a>
+</div>
+
+<!-- Categories Table Card -->
+<div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+    <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse">
+            <thead>
+                <tr class="bg-slate-50/50 border-b border-slate-100">
+                    <th class="px-6 py-4 text-sm font-semibold text-slate-800">Name</th>
+                    <th class="px-6 py-4 text-sm font-semibold text-slate-800">Parent</th>
+                    <th class="px-6 py-4 text-sm font-semibold text-slate-800">Slug</th>
+                    <th class="px-6 py-4 text-sm font-semibold text-slate-800">Status</th>
+                    <th class="px-6 py-4 text-sm font-semibold text-slate-800 text-right">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 text-sm">
+                @forelse($categories as $category)
+                    <tr class="hover:bg-slate-50/50 transition-colors">
+                        <td class="px-6 py-4">
+                            <div class="font-bold text-slate-900">{{ $category->name }}</div>
+                        </td>
+                        <td class="px-6 py-4 text-slate-600">
+                            @if($category->parent)
+                                <span class="px-2 py-1 rounded-lg bg-slate-100 text-slate-700 text-xs">
+                                    {{ $category->parent->name }}
+                                </span>
+                            @else
+                                <span class="text-slate-400">—</span>
+                            @endif
+                        </td>
+                        <td class="px-6 py-4 text-slate-600 font-mono text-xs">{{ $category->slug }}</td>
+                        <td class="px-6 py-4">
+                            @if($category->is_active)
+                                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-successBg text-success border border-success/20">Active</span>
+                            @else
+                                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-500 border border-slate-200">Inactive</span>
+                            @endif
+                        </td>
+                        <td class="px-6 py-4 text-right space-x-2">
+                            <a href="{{ route('admin.categories.edit', $category) }}" class="text-info hover:text-blue-700 font-medium transition-colors">Edit</a>
+                            <form action="{{ route('admin.categories.destroy', $category) }}" method="POST" class="inline-block" onsubmit="return confirm('Are you sure you want to delete this category?');">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="text-danger hover:text-red-700 font-medium transition-colors">Delete</button>
+                            </form>
+                        </td>
+                    </tr>
+                @empty
+                    <tr>
+                        <td colspan="5" class="px-6 py-12 text-center text-slate-500">
+                            No categories found.
+                        </td>
+                    </tr>
+                @endforelse
+            </tbody>
+        </table>
+    </div>
+    @if($categories instanceof \Illuminate\Pagination\AbstractPaginator && $categories->hasPages())
+        <div class="px-6 py-4 border-t border-slate-100 bg-slate-50/30">
+            {{ $categories->links() }}
+        </div>
+    @endif
+</div>
+@endsection

@@ -16,7 +16,82 @@ class DashboardController extends Controller
         return auth()->user()->organizations()->first();
     }
 
-    public function index()
+    public function show(Request $request)
+    {
+        $user = auth()->check() ? auth()->user() : null;
+        $preferred = $request->get('dashboard', session('active_dashboard'));
+
+        if ($preferred && $this->canAccessDashboard($preferred, $user)) {
+            session(['active_dashboard' => $preferred]);
+            return $this->redirectToDashboard($preferred);
+        }
+
+        // Auto-detect based on permissions
+        if ($user->is_super_admin) {
+            return redirect()->route('super-admin.dashboard');
+        }
+        if ($user->organizations()->exists()) {
+            return redirect()->route('dashboard');
+        }
+        return redirect()->route('buyer.dashboard');
+    }
+
+    public function switch($dashboard = null)
+    {
+        $user = auth()->user();
+        
+        if ($dashboard && $this->canAccessDashboard($dashboard, $user)) {
+            session(['active_dashboard' => $dashboard]);
+        }
+
+        return $this->redirectToDashboard($dashboard, $user);
+    }
+
+    private function canAccessDashboard($dashboard, $user)
+    {
+        if ($dashboard === 'buyer') {
+            return true; // Everyone is a buyer
+        }
+        if ($dashboard === 'seller') {
+            return $user->organizations()->exists();
+        }
+        if ($dashboard === 'admin') {
+            return (bool) $user->is_super_admin;
+        }
+        return false;
+    }
+
+    private function redirectToDashboard($dashboard, $user = null)
+    {
+        $user = $user ?? auth()->user();
+        $dashboard = $dashboard ?? session('active_dashboard');
+
+        switch ($dashboard) {
+            case 'buyer':
+                return redirect()->route('buyer.dashboard');
+            case 'seller':
+                if ($user->organizations()->exists()) {
+                    return redirect()->route('dashboard');
+                }
+                break;
+            case 'admin':
+                if ($user->is_super_admin) {
+                    return redirect()->route('super-admin.dashboard');
+                }
+                break;
+        }
+
+        // Fallback logic
+        if ($user->is_super_admin) {
+            return redirect()->route('super-admin.dashboard');
+        }
+        if ($user->organizations()->exists()) {
+            return redirect()->route('dashboard');
+        }
+        return redirect()->route('buyer.dashboard');
+    }
+
+    public function index(Request $request)
     {
         $org = $this->getOrg();
 

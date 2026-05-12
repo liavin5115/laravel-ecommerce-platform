@@ -12,38 +12,59 @@
 
                 <!-- Navigation Links -->
                 <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
-                    <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
-                        {{ __('Dashboard') }}
-                    </x-nav-link>
-                    <x-nav-link :href="route('dashboard.products')" :active="request()->routeIs('dashboard.products')">
-                        {{ __('Products') }}
-                    </x-nav-link>
-                    <x-nav-link :href="route('dashboard.orders')" :active="request()->routeIs('dashboard.orders')">
-                        {{ __('Orders') }}
-                    </x-nav-link>
-                    <x-nav-link :href="route('dashboard.customers')" :active="request()->routeIs('dashboard.customers')">
-                        {{ __('Customers') }}
-                    </x-nav-link>
-                    <x-nav-link :href="route('dashboard.stores')" :active="request()->routeIs('dashboard.stores*')">
-                        {{ __('Stores') }}
-                    </x-nav-link>
-                    <x-nav-link :href="route('dashboard.categories')" :active="request()->routeIs('dashboard.categories*')">
-                        {{ __('Categories') }}
-                    </x-nav-link>
-                    <x-nav-link :href="route('dashboard.coupons')" :active="request()->routeIs('dashboard.coupons')">
-                        {{ __('Coupons') }}
-                    </x-nav-link>
-                    <x-nav-link :href="route('dashboard.tickets')" :active="request()->routeIs('dashboard.tickets*')">
-                        {{ __('Tickets') }}
-                    </x-nav-link>
+                    @php
+                        $activeDashboard = session('dashboard_preference', 'default');
+                        $isSellerDashboard = $activeDashboard === 'seller' && Auth::user()->organizations()->exists();
+                        $isBuyerDashboard = $activeDashboard === 'buyer' && !Auth::user()->organizations()->exists();
+                        $isAdminDashboard = $activeDashboard === 'admin' && Auth::user()->is_super_admin;
+                    @endphp
 
-                    @if(Auth::user()->is_super_admin)
+                    @if($isSellerDashboard || (!$isBuyerDashboard && !$isAdminDashboard && Auth::user()->organizations()->exists()))
+                        <!-- Seller Navigation -->
+                        <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
+                            {{ __('Dashboard') }}
+                        </x-nav-link>
+                        <x-nav-link :href="route('dashboard.products')" :active="request()->routeIs('dashboard.products')">
+                            {{ __('Products') }}
+                        </x-nav-link>
+                        <x-nav-link :href="route('dashboard.orders')" :active="request()->routeIs('dashboard.orders')">
+                            {{ __('Orders') }}
+                        </x-nav-link>
+                        <x-nav-link :href="route('dashboard.customers')" :active="request()->routeIs('dashboard.customers')">
+                            {{ __('Customers') }}
+                        </x-nav-link>
+                        <x-nav-link :href="route('dashboard.stores')" :active="request()->routeIs('dashboard.stores*')">
+                            {{ __('Stores') }}
+                        </x-nav-link>
+                        <x-nav-link :href="route('dashboard.categories')" :active="request()->routeIs('dashboard.categories*')">
+                            {{ __('Categories') }}
+                        </x-nav-link>
+                        <x-nav-link :href="route('dashboard.coupons')" :active="request()->routeIs('dashboard.coupons')">
+                            {{ __('Coupons') }}
+                        </x-nav-link>
+                        <x-nav-link :href="route('dashboard.tickets')" :active="request()->routeIs('dashboard.tickets*')">
+                            {{ __('Tickets') }}
+                        </x-nav-link>
+                    @elseif($isBuyerDashboard || (!$isSellerDashboard && !$isAdminDashboard && !Auth::user()->organizations()->exists()))
+                        <!-- Buyer Navigation -->
+                        <x-nav-link :href="route('buyer.dashboard')" :active="request()->routeIs('buyer.dashboard')">
+                            {{ __('My Account') }}
+                        </x-nav-link>
+                        <x-nav-link :href="route('buyer.orders')" :active="request()->routeIs('buyer.orders*')">
+                            {{ __('My Orders') }}
+                        </x-nav-link>
+                    @endif
+
+                    @if($isAdminDashboard || (!$isSellerDashboard && !$isBuyerDashboard && Auth::user()->is_super_admin))
                         <div class="border-l border-gray-200 dark:border-gray-700 ml-4 pl-4 flex space-x-8">
                             <x-nav-link :href="route('super-admin.dashboard')" :active="request()->routeIs('super-admin.dashboard')" class="text-indigo-600 dark:text-indigo-400 font-bold">
                                 {{ __('Platform') }}
                             </x-nav-link>
                             <x-nav-link :href="route('super-admin.organizations.index')" :active="request()->routeIs('super-admin.organizations.*')" class="text-indigo-600 dark:text-indigo-400 font-bold">
                                 {{ __('Manage Stores') }}
+                            </x-nav-link>
+                            <x-nav-link :href="route('super-admin.seller-requests.index')" :active="request()->routeIs('super-admin.seller-requests.*')" class="text-indigo-600 dark:text-indigo-400 font-bold">
+                                {{ __('Seller Requests') }}
                             </x-nav-link>
                         </div>
                     @endif
@@ -99,30 +120,41 @@
     <!-- Responsive Navigation Menu -->
     <div :class="{'block': open, 'hidden': ! open}" class="hidden sm:hidden">
         <div class="pt-2 pb-3 space-y-1">
-            <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
-                {{ __('Dashboard') }}
-            </x-responsive-nav-link>
-            <x-responsive-nav-link :href="route('dashboard.products')" :active="request()->routeIs('dashboard.products')">
-                {{ __('Products') }}
-            </x-responsive-nav-link>
-            <x-responsive-nav-link :href="route('dashboard.orders')" :active="request()->routeIs('dashboard.orders')">
-                {{ __('Orders') }}
-            </x-responsive-nav-link>
-            <x-responsive-nav-link :href="route('dashboard.customers')" :active="request()->routeIs('dashboard.customers')">
-                {{ __('Customers') }}
-            </x-responsive-nav-link>
-            <x-responsive-nav-link :href="route('dashboard.stores')" :active="request()->routeIs('dashboard.stores*')">
-                {{ __('Stores') }}
-            </x-responsive-nav-link>
-            <x-responsive-nav-link :href="route('dashboard.categories')" :active="request()->routeIs('dashboard.categories*')">
-                {{ __('Categories') }}
-            </x-responsive-nav-link>
-            <x-responsive-nav-link :href="route('dashboard.coupons')" :active="request()->routeIs('dashboard.coupons')">
-                {{ __('Coupons') }}
-            </x-responsive-nav-link>
-            <x-responsive-nav-link :href="route('dashboard.tickets')" :active="request()->routeIs('dashboard.tickets*')">
-                {{ __('Tickets') }}
-            </x-responsive-nav-link>
+            @if(Auth::user()->organizations()->exists())
+                <!-- Seller Navigation -->
+                <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
+                    {{ __('Dashboard') }}
+                </x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('dashboard.products')" :active="request()->routeIs('dashboard.products')">
+                    {{ __('Products') }}
+                </x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('dashboard.orders')" :active="request()->routeIs('dashboard.orders')">
+                    {{ __('Orders') }}
+                </x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('dashboard.customers')" :active="request()->routeIs('dashboard.customers')">
+                    {{ __('Customers') }}
+                </x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('dashboard.stores')" :active="request()->routeIs('dashboard.stores*')">
+                    {{ __('Stores') }}
+                </x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('dashboard.categories')" :active="request()->routeIs('dashboard.categories*')">
+                    {{ __('Categories') }}
+                </x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('dashboard.coupons')" :active="request()->routeIs('dashboard.coupons')">
+                    {{ __('Coupons') }}
+                </x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('dashboard.tickets')" :active="request()->routeIs('dashboard.tickets*')">
+                    {{ __('Tickets') }}
+                </x-responsive-nav-link>
+            @else
+                <!-- Buyer Navigation -->
+                <x-responsive-nav-link :href="route('buyer.dashboard')" :active="request()->routeIs('buyer.dashboard')">
+                    {{ __('My Account') }}
+                </x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('buyer.orders')" :active="request()->routeIs('buyer.orders*')">
+                    {{ __('My Orders') }}
+                </x-responsive-nav-link>
+            @endif
 
             @if(Auth::user()->is_super_admin)
                 <div class="border-t border-indigo-100 dark:border-indigo-900 mt-2 pt-2">
@@ -131,6 +163,9 @@
                     </x-responsive-nav-link>
                     <x-responsive-nav-link :href="route('super-admin.organizations.index')" :active="request()->routeIs('super-admin.organizations.*')" class="text-indigo-600 font-bold">
                         {{ __('Manage All Stores') }}
+                    </x-responsive-nav-link>
+                    <x-responsive-nav-link :href="route('super-admin.seller-requests.index')" :active="request()->routeIs('super-admin.seller-requests.*')" class="text-indigo-600 font-bold">
+                        {{ __('Seller Requests') }}
                     </x-responsive-nav-link>
                 </div>
             @endif

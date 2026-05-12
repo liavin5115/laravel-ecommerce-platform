@@ -1,85 +1,90 @@
-<x-app-layout>
-    <x-slot name="header">
-        <div class="flex items-center justify-between">
-            <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
-                {{ __('Orders') }}
-            </h2>
-            <span class="text-sm text-gray-500 dark:text-gray-400">{{ $orders instanceof \Illuminate\Pagination\AbstractPaginator ? $orders->total() : $orders->count() }} total</span>
-        </div>
-    </x-slot>
+@extends('layouts.dashboard')
 
-    <div class="py-12">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-            <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
-                <div class="p-6">
-                    <div class="overflow-x-auto">
-                        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                            <thead>
-                                <tr>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Order #</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Customer</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Items</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Payment</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Total</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Date</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-                                @forelse($orders as $order)
-                                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">{{ $order->order_number }}</td>
-                                        <td class="px-6 py-4 whitespace-nowrap">
-                                            <div class="text-sm text-gray-900 dark:text-white">{{ $order->customer?->name ?? '—' }}</div>
-                                            <div class="text-sm text-gray-500 dark:text-gray-400">{{ $order->customer?->email ?? '' }}</div>
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{{ $order->items->count() }} item(s)</td>
-                                        <td class="px-6 py-4 whitespace-nowrap">
-                                            @php
-                                                $colors = [
-                                                    'pending' => 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400',
-                                                    'processing' => 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
-                                                    'shipped' => 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400',
-                                                    'delivered' => 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
-                                                    'cancelled' => 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
-                                                ];
-                                            @endphp
-                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ $colors[$order->status] ?? 'bg-gray-100 text-gray-800' }}">
-                                                {{ ucfirst($order->status) }}
-                                            </span>
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap">
-                                            @if($order->payments->count() > 0)
-                                                @php $payment = $order->payments->first(); @endphp
-                                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ $payment->status === 'paid' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400' }}">
-                                                    {{ ucfirst($payment->status) }}
-                                                </span>
-                                            @else
-                                                <span class="text-sm text-gray-400">—</span>
-                                            @endif
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">${{ number_format($order->grand_total, 2) }}</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{{ $order->placed_at?->format('M d, Y') ?? '—' }}</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                            <a href="{{ route('admin.orders.show', $order) }}" class="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300">View</a>
-                                        </td>
-                                    </tr>
-                                @empty
-                                    <tr>
-                                        <td colspan="7" class="px-6 py-12 text-center text-sm text-gray-500 dark:text-gray-400">No orders found.</td>
-                                    </tr>
-                                @endforelse
-                            </tbody>
-                        </table>
-                    </div>
-                    @if($orders instanceof \Illuminate\Pagination\AbstractPaginator && $orders->hasPages())
-                        <div class="mt-6">
-                            {{ $orders->links() }}
-                        </div>
-                    @endif
-                </div>
-            </div>
-        </div>
+@section('title', 'Orders')
+
+@section('content')
+<!-- Page Title -->
+<div class="flex items-center justify-between">
+    <div>
+        <h1 class="text-2xl font-semibold text-slate-900">Orders</h1>
+        <p class="text-sm text-textMuted mt-1">{{ $orders instanceof \Illuminate\Pagination\AbstractPaginator ? $orders->total() : $orders->count() }} orders total</p>
     </div>
-</x-app-layout>
+</div>
+
+<!-- Orders Table Card -->
+<div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+    <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse">
+            <thead>
+                <tr class="bg-slate-50/50 border-b border-slate-100">
+                    <th class="px-6 py-4 text-sm font-semibold text-slate-800">Order #</th>
+                    <th class="px-6 py-4 text-sm font-semibold text-slate-800">Customer</th>
+                    <th class="px-6 py-4 text-sm font-semibold text-slate-800">Status</th>
+                    <th class="px-6 py-4 text-sm font-semibold text-slate-800">Payment</th>
+                    <th class="px-6 py-4 text-sm font-semibold text-slate-800">Total</th>
+                    <th class="px-6 py-4 text-sm font-semibold text-slate-800">Date</th>
+                    <th class="px-6 py-4 text-sm font-semibold text-slate-800 text-right">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 text-sm">
+                @forelse($orders as $order)
+                    <tr class="hover:bg-slate-50/50 transition-colors">
+                        <td class="px-6 py-4 font-bold text-slate-900">
+                            {{ $order->order_number }}
+                        </td>
+                        <td class="px-6 py-4">
+                            <div class="font-medium text-slate-900">{{ $order->customer?->name ?? '—' }}</div>
+                            <div class="text-xs text-textMuted">{{ $order->customer?->email ?? '' }}</div>
+                        </td>
+                        <td class="px-6 py-4">
+                            @php
+                                $statusClasses = [
+                                    'pending' => 'bg-warningBg text-yellow-700 border-warning/20',
+                                    'processing' => 'bg-infoBg text-info border-info/20',
+                                    'shipped' => 'bg-infoBg text-info border-info/20',
+                                    'delivered' => 'bg-successBg text-success border-success/20',
+                                    'cancelled' => 'bg-dangerBg text-danger border-danger/20',
+                                ];
+                                $class = $statusClasses[$order->status] ?? 'bg-slate-100 text-slate-600 border-slate-200';
+                            @endphp
+                            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium {{ $class }} border">
+                                {{ ucfirst($order->status) }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4">
+                            @if($order->payments->count() > 0)
+                                @php $payment = $order->payments->first(); @endphp
+                                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium {{ $payment->status === 'paid' ? 'bg-successBg text-success' : 'bg-warningBg text-yellow-700' }}">
+                                    {{ ucfirst($payment->status) }}
+                                </span>
+                            @else
+                                <span class="text-slate-400">—</span>
+                            @endif
+                        </td>
+                        <td class="px-6 py-4 font-bold text-slate-900">
+                            ${{ number_format($order->grand_total, 2) }}
+                        </td>
+                        <td class="px-6 py-4 text-slate-600">
+                            {{ $order->placed_at?->format('M d, Y') ?? '—' }}
+                        </td>
+                        <td class="px-6 py-4 text-right">
+                            <a href="{{ route('admin.orders.show', $order) }}" class="text-info hover:text-blue-700 font-medium transition-colors">View Details</a>
+                        </td>
+                    </tr>
+                @empty
+                    <tr>
+                        <td colspan="7" class="px-6 py-12 text-center text-slate-500">
+                            No orders found.
+                        </td>
+                    </tr>
+                @endforelse
+            </tbody>
+        </table>
+    </div>
+    @if($orders instanceof \Illuminate\Pagination\AbstractPaginator && $orders->hasPages())
+        <div class="px-6 py-4 border-t border-slate-100 bg-slate-50/30">
+            {{ $orders->links() }}
+        </div>
+    @endif
+</div>
+@endsection

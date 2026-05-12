@@ -170,26 +170,122 @@ class DashboardController extends Controller
 
     public function tickets()
     {
-        $org = $this->getOrg();
-
-        $tickets = $org
-            ? SupportTicket::with(['customer'])
-                ->where('organization_id', $org->id)
+        $activeDashboard = session('active_dashboard', 'buyer');
+        
+        if ($activeDashboard === 'seller') {
+            $org = $this->getOrg();
+            $tickets = $org
+                ? SupportTicket::with(['customer'])
+                    ->where('organization_id', $org->id)
+                    ->latest()
+                    ->paginate(10)
+                : collect();
+        } else {
+            $tickets = SupportTicket::with(['organization'])
+                ->whereHas('customer', function($query) {
+                    $query->where('email', auth()->user()->email);
+                })
                 ->latest()
-                ->paginate(10)
-            : collect();
+                ->paginate(10);
+        }
 
-        return view('dashboard.tickets.index', compact('tickets'));
+        return view('dashboard.tickets.index', compact('tickets', 'activeDashboard'));
+    }
+
+    public function ticketStore(Request $request)
+    {
+        $request->validate([
+            'subject' => 'required|string|max:255',
+            'message' => 'required|string',
+            'priority' => 'required|in:low,medium,high',
+            'reference_id' => 'nullable|string|max:100',
+        ]);
+
+        // Determine organization context
+        $org = auth()->user()->organizations()->first();
+
+        // For buyers (no organization), use first organization as support recipient
+        if (!$org) {
+            $org = \App\Models\Organization::first();
+        }
+
+        // Find or create customer - buyers may not have organization_id
+        $customer = Customer::firstOrCreate(
+            ['email' => auth()->user()->email],
+            ['name' => auth()->user()->name, 'organization_id' => $org->id]
+        );
+
+        $ticket = SupportTicket::create([
+            'organization_id' => $org->id,
+            'customer_id' => $customer->id,
+            'subject' => $request->subject . ($request->reference_id ? " (Ref: #{$request->reference_id})" : ""),
+            'priority' => $request->priority,
+            'status' => 'open',
+        ]);
+
+        TicketMessage::create([
+            'support_ticket_id' => $ticket->id,
+            'sender_user_id' => auth()->id(),
+            'message' => $request->message,
+        ]);
+
+        // If AJAX request, return ticket data for widget
+        if ($request->expectsJson() || $request->header('X-Requested-With') === 'XMLHttpRequest') {
+            $ticket->load(['customer', 'messages.sender', 'organization']);
+            return response()->json([
+                'success' => true,
+                'ticket' => $ticket,
+                'redirect' => route('dashboard.tickets.show', $ticket),
+            ]);
+        }
+
+        return redirect()->route('dashboard.tickets.show', $ticket)->with('success', 'Support ticket created successfully.');
     }
 
     public function ticketShow(SupportTicket $ticket)
     {
+        // Authorization: user must be seller or customer
+        $user = auth()->user();
+        $isSeller = $user->organizations()->exists() &&
+            $user->organizations()->first()->id === $ticket->organization_id;
+        $isCustomer = $ticket->customer && $ticket->customer->email === $user->email;
+
+        if (!$isSeller && !$isCustomer) {
+            abort(403, 'Unauthorized access to this ticket.');
+        }
+
         $ticket->load(['customer', 'messages.sender']);
         return view('dashboard.tickets.show', compact('ticket'));
     }
 
+    public function ticketMessages(SupportTicket $ticket)
+    {
+        // Authorization: user must be seller or customer
+        $user = auth()->user();
+        $isSeller = $user->organizations()->exists() &&
+            $user->organizations()->first()->id === $ticket->organization_id;
+        $isCustomer = $ticket->customer && $ticket->customer->email === $user->email;
+
+        if (!$isSeller && !$isCustomer) {
+            abort(403, 'Unauthorized access to this ticket.');
+        }
+
+        $ticket->load(['customer', 'messages.sender', 'organization']);
+        return view('partials.ticket-chat-content', compact('ticket'));
+    }
+
     public function ticketReply(Request $request, SupportTicket $ticket)
     {
+        // Authorization: user must be seller or customer
+        $user = auth()->user();
+        $isSeller = $user->organizations()->exists() &&
+            $user->organizations()->first()->id === $ticket->organization_id;
+        $isCustomer = $ticket->customer && $ticket->customer->email === $user->email;
+
+        if (!$isSeller && !$isCustomer) {
+            abort(403, 'Unauthorized access to this ticket.');
+        }
+
         $request->validate([
             'message' => 'required|string',
             'status' => 'required|in:open,in_progress,closed',

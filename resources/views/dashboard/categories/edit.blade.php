@@ -1,35 +1,86 @@
-<x-app-layout>
-    <x-slot name="header"><h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">Edit Category: {{ $category->name }}</h2></x-slot>
-    <div class="py-12">
-        <div class="max-w-2xl mx-auto sm:px-6 lg:px-8">
-            <div class="bg-white dark:bg-gray-800 shadow-sm sm:rounded-lg p-6">
-                <form method="POST" action="{{ route('admin.categories.update', $category) }}">
-                    @csrf @method('PUT')
-                    @if($errors->any())<div class="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg"><ul class="list-disc list-inside text-sm text-red-600">@foreach($errors->all() as $e)<li>{{ $e }}</li>@endforeach</ul></div>@endif
-                    <div class="space-y-6">
-                        <div><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Category Name *</label><input type="text" name="name" value="{{ old('name', $category->name) }}" required class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white"></div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Parent Category</label>
-                            <select name="parent_id" class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
-                                <option value="">None</option>
-                                @foreach($parentCategories as $parent)<option value="{{ $parent->id }}" @selected($category->parent_id == $parent->id)>{{ $parent->name }}</option>@endforeach
-                            </select>
+@extends('layouts.dashboard')
+
+@section('title', 'Edit Category')
+
+@section('content')
+<div class="mb-6">
+    <a href="{{ route('dashboard.categories') }}" class="inline-flex items-center text-sm text-textMuted hover:text-slate-900 transition-colors mb-2">
+        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+        Back to Categories
+    </a>
+    <h1 class="text-2xl font-bold text-slate-900">Edit Category: {{ $category->name }}</h1>
+    <p class="text-textMuted text-sm mt-1">Update the details for this category.</p>
+</div>
+
+<div class="max-w-2xl">
+    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-8">
+        <form method="POST" action="{{ route('admin.categories.update', $category) }}" class="space-y-6">
+            @csrf
+            @method('PUT')
+
+            @if($errors->any())
+                <div class="p-4 bg-dangerBg border border-danger/10 rounded-xl">
+                    <ul class="list-disc list-inside text-sm text-danger font-medium">
+                        @foreach($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
+
+            <div class="space-y-6">
+                <!-- Name -->
+                <div>
+                    <label for="name" class="block text-sm font-bold text-slate-700 mb-2">Category Name <span class="text-danger">*</span></label>
+                    <input type="text" name="name" id="name" value="{{ old('name', $category->name) }}" required 
+                           class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm focus:ring-info focus:border-info transition-colors placeholder:text-slate-400">
+                </div>
+
+                <!-- Parent Category -->
+                <div>
+                    <label for="parent_id" class="block text-sm font-bold text-slate-700 mb-2">Parent Category</label>
+                    <select name="parent_id" id="parent_id" 
+                            class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm focus:ring-info focus:border-info transition-colors">
+                        <option value="">None (Top Level)</option>
+                        @foreach($parentCategories as $parent)
+                            <option value="{{ $parent->id }}" @selected(old('parent_id', $category->parent_id) == $parent->id)>{{ $parent->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <!-- Icon -->
+                <div>
+                    <label for="icon" class="block text-sm font-bold text-slate-700 mb-2">Icon Class</label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
                         </div>
-                        <div><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Icon Class</label><input type="text" name="icon" value="{{ old('icon', $category->icon) }}" class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white"></div>
-                        <div class="flex items-center gap-3">
-                            <label class="flex items-center">
-                                <input type="hidden" name="is_active" value="0">
-                                <input type="checkbox" name="is_active" value="1" @checked($category->is_active) class="rounded border-gray-300 dark:border-gray-600 text-indigo-600 shadow-sm focus:ring-indigo-500">
-                                <span class="ml-2 text-sm text-gray-600 dark:text-gray-400">Active</span>
-                            </label>
-                        </div>
+                        <input type="text" name="icon" id="icon" value="{{ old('icon', $category->icon) }}" 
+                               class="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm focus:ring-info focus:border-info transition-colors placeholder:text-slate-400">
                     </div>
-                    <div class="mt-8 flex items-center gap-4">
-                        <button type="submit" class="px-6 py-2.5 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 transition shadow-lg shadow-indigo-500/30">Update Category</button>
-                        <a href="{{ route('dashboard.categories') }}" class="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400">Cancel</a>
+                </div>
+
+                <!-- Status Toggle -->
+                <div class="flex items-center space-x-3 p-4 bg-slate-50 rounded-2xl border border-slate-200">
+                    <div class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none" x-data="{ on: {{ $category->is_active ? 'true' : 'false' }} }">
+                        <input type="hidden" name="is_active" value="0">
+                        <input type="checkbox" name="is_active" value="1" @checked($category->is_active) x-model="on" class="sr-only">
+                        <span :class="on ? 'bg-indigo-600' : 'bg-slate-300'" class="absolute inset-0 rounded-full transition-colors duration-200"></span>
+                        <span :class="on ? 'translate-x-6' : 'translate-x-1'" class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-200 ease-in-out shadow-sm"></span>
                     </div>
-                </form>
+                    <span class="text-sm font-bold text-slate-700">Category is Active</span>
+                </div>
             </div>
-        </div>
+
+            <div class="pt-6 border-t border-slate-100 flex items-center gap-4">
+                <button type="submit" class="px-8 py-3 bg-sidebarDark text-white font-bold rounded-2xl hover:bg-slate-800 transition-all shadow-lg shadow-slate-200 active:scale-[0.98]">
+                    Update Category
+                </button>
+                <a href="{{ route('dashboard.categories') }}" class="text-sm font-bold text-slate-500 hover:text-slate-900 transition-colors">
+                    Cancel
+                </a>
+            </div>
+        </form>
     </div>
-</x-app-layout>
+</div>
+@endsection

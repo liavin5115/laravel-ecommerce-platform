@@ -81,10 +81,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/dashboard/coupons', [CouponController::class, 'index'])->name('dashboard.coupons');
         Route::get('/dashboard/stores', [App\Http\Controllers\Admin\StoreController::class, 'index'])->name('dashboard.stores');
         Route::get('/dashboard/categories', [App\Http\Controllers\Admin\CategoryController::class, 'index'])->name('dashboard.categories');
-        Route::get('/dashboard/tickets', [DashboardController::class, 'tickets'])->name('dashboard.tickets');
-        Route::get('/dashboard/tickets/{ticket}', [DashboardController::class, 'ticketShow'])->name('dashboard.tickets.show');
-        Route::post('/dashboard/tickets/{ticket}/reply', [DashboardController::class, 'ticketReply'])->name('dashboard.tickets.reply');
     });
+
+    // Support Tickets (accessible to both buyers and sellers)
+    Route::get('/dashboard/tickets', [DashboardController::class, 'tickets'])->name('dashboard.tickets');
+    Route::post('/dashboard/tickets', [DashboardController::class, 'ticketStore'])->name('dashboard.tickets.store');
+    Route::get('/dashboard/tickets/{ticket}', [DashboardController::class, 'ticketShow'])->name('dashboard.tickets.show');
+    Route::get('/dashboard/tickets/{ticket}/messages', [DashboardController::class, 'ticketMessages'])->name('dashboard.tickets.messages');
+    Route::post('/dashboard/tickets/{ticket}/reply', [DashboardController::class, 'ticketReply'])->name('dashboard.tickets.reply');
 });
 
 // ── Admin CRUD ──────────────────────────────────────────

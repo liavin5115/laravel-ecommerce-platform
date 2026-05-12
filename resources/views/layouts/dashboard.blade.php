@@ -258,6 +258,7 @@
         <!-- END: Page Content -->
     </main>
     <!-- END: Main Content Area -->
+    @include('partials.chat-widget')
     @yield('scripts')
 </body>
 </html>
